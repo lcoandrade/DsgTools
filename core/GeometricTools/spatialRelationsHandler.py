@@ -125,6 +125,7 @@ class SpatialRelationsHandler(QObject):
         contourAreaDict = self.buildContourAreaDict(
             inputLyr=splitLinesLyr,
             geoBoundsLyr=geoBoundsLyr,
+            geoBoundsGeomEngine=geoBoundsGeomEngine
             attributeName=heightFieldName,
             contourSpatialIdx=contourSpatialIdx,
             contourIdDict=contourIdDict,
@@ -140,6 +141,12 @@ class SpatialRelationsHandler(QObject):
             feedback=multiStepFeedback
         )
         invalidDict.update(misingContourDict)
+        if len(invalidDict) > 0:
+            return invalidDict
+        multiStepFeedback.setCurrentStep(7)
+        hilltopDict = self.buildHilltopDict(
+            
+        )
         return invalidDict
 
     def getGeoBoundsGeomEngine(self, geoBoundsLyr, context=None, feedback=None):
@@ -161,15 +168,16 @@ class SpatialRelationsHandler(QObject):
         engine.prepareGeometry()
         return engine
 
-    def buildContourAreaDict(self, inputLyr, geoBoundsLyr, attributeName,\
-            contourSpatialIdx, contourIdDict, depressionExpression=None,\
-            context=None, feedback=None):
+    def buildContourAreaDict(self, inputLyr, geoBoundsLyr, geoBoundsGeomEngine,\
+            attributeName, contourSpatialIdx, contourIdDict, \
+            depressionExpression=None, context=None, feedback=None):
         """
         Builds a dict in the following format:
         {
             'areaSpatialIdx' : QgsSpatialIndex of the built areas,
             'areaIdDict' : {id:feat}
             'areaContourRelations' : {id : {height:[list of feats]}}
+            'hilltopDict' : {dict with the closed curves}
         }
         """
         contourAreaDict = {
@@ -182,7 +190,8 @@ class SpatialRelationsHandler(QObject):
         boundsLineLyr = self.algRunner.runPolygonsToLines(
             geoBoundsLyr, context, feedback=multiStepFeedback
         ) if geoBoundsLyr is not None else None
-        lineLyrList = [inputLyr] if boundsLineLyr is None else [inputLyr, boundsLineLyr]
+        lineLyrList = [inputLyr] if boundsLineLyr is None\
+            else [inputLyr, boundsLineLyr]
         multiStepFeedback.setCurrentStep(1)
         linesLyr = self.algRunner.runMergeVectorLayers(
             lineLyrList,
@@ -515,23 +524,6 @@ class SpatialRelationsHandler(QObject):
             if feedback is not None:
                 feedback.setProgress(step * current)
         return invalidDict
-    
-    def isDangle(self, point, featureDict, spatialIdx, searchRadius=10**-15):
-        """
-        :param point: (QgsPointXY) node tested as dangle;
-        :param featureDict: (dict) dict {featid:feat};
-        :param spatialIdx: (QgsSpatialIndex) spatial index
-        of features from featureDict;
-        :param searchRadius: (float) search radius.
-        """
-        qgisPoint = QgsGeometry.fromPointXY(point)
-        buffer = qgisPoint.buffer(searchRadius, -1)
-        bufferBB = buffer.boundingBox()
-        for featid in spatialIdx.intersects(bufferBB):
-            if buffer.intersects(featureDict[featid].geometry()) and \
-                qgisPoint.distance(featureDict[featid].geometry()) < 10**-9:
-                return True
-        return False
 
     def buildIntersectionDict(self, drainageLyr, drainageIdDict, drainageSpatialIdx, contourIdDict, contourSpatialIdx, feedback=None):
         intersectionDict = dict()
@@ -606,40 +598,6 @@ class SpatialRelationsHandler(QObject):
                 validatedIdsDict.pop(id)
         return validatedIdsDict, invalidatedIdsDict
     
-    def validateContourPolygons(self, contourPolygonDict, contourPolygonIdx, threshold, heightFieldName, depressionValueDict=None):
-        hilltopDict = self.buildHilltopDict(
-            contourPolygonDict,
-            contourPolygonIdx
-            )
-        invalidDict = dict()
-        for hilltopGeom, hilltop in hilltopDict.items():
-            localFlagList = []
-            polygonList = hilltop['downhill']
-            feat = hilltop['feat']
-            if len(polygonList) < 2:
-                break
-            # sort polygons by area, from minimum to max
-            polygonList.sort(key=lambda x: x.geometry().area())
-            #pair comparison
-            a, b = tee([feat]+polygonList)
-            next(b, None)
-            for elem1, elem2 in zip(a, b):
-                if abs(elem1[heightFieldName]-elem2[heightFieldName]) != threshold:
-                    elem1GeomKey = elem1.geometry().asWkb()
-                    if elem1GeomKey not in invalidDict:
-                        invalidDict[elem1GeomKey] = []
-                    invalidDict[elem1GeomKey] += [self.tr(
-                        'Difference between contour with values {id1} \
-                        and {id2} do not match equidistance {equidistance}.\
-                        Probably one contour is \
-                        missing or one of the contours have wrong value.\n'
-                    ).format(
-                        id1=elem1[heightFieldName],
-                        id2=elem2[heightFieldName],
-                        equidistance=threshold
-                    )]
-        return invalidDict
-    
     def buildHilltopDict(self, contourPolygonDict, contourPolygonIdx):
         hilltopDict = dict()
         buildDictAlias = lambda x: self.initiateHilltopDict(x, hilltopDict)
@@ -657,8 +615,8 @@ class SpatialRelationsHandler(QObject):
                     hilltopDict.pop(geomWkb.asWkb())
                     break
                 if candId != idx and candGeom.contains(geom) \
-                    and candFeat not in hilltopDict[geomWkb]['donwhill']:
-                    hilltopDict[geomWkb]['donwhill'].append(candFeat)
+                    and candFeat not in hilltopDict[geomWkb]['downhill']:
+                    hilltopDict[geomWkb]['downhill'].append(candFeat)
             return hilltopDict
     
     def initiateHilltopDict(self, feat, hilltopDict):
@@ -668,15 +626,6 @@ class SpatialRelationsHandler(QObject):
             }
     
     def buildTerrainPolygons(self, featList):
-        pass
-
-    def validateContourLines(self, contourLyr, contourAttrName, refLyr, feedback=None):
-        """
-        1. Validate contour connectivity;
-        2. Build terrain polygons by contour value;
-        3. Build terrain dict;
-        4. Validate contours.
-        """
         pass
     
     def validateSpatialRelations(self, ruleList, createSpatialIndex=True, feedback=None):
