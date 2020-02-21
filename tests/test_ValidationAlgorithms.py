@@ -616,7 +616,7 @@ class Tester(unittest.TestCase):
                         'geojson', 'land_cover_layers', ['center_points_test1']
                     )[0],
                     'SELECTED' : False,
-                    'ATTRIBUTE_BLACK_LIST' : [],
+                    'CENTER_POINT_ATTRIBUTES' : ['type'],
                     'CONSTRAINT_LINE_LAYERS' : self.getInputLayers(
                         'geojson', 'land_cover_layers', ['fence', 'road', 'boundaries']
                     ),
@@ -633,7 +633,7 @@ class Tester(unittest.TestCase):
                         'geojson', 'land_cover_layers', ['center_points_test2']
                     )[0],
                     'SELECTED' : False,
-                    'ATTRIBUTE_BLACK_LIST' : [],
+                    'CENTER_POINT_ATTRIBUTES' : ['type'],
                     'CONSTRAINT_LINE_LAYERS' : self.getInputLayers(
                         'geojson', 'land_cover_layers', ['fence', 'road', 'boundaries']
                     ),
@@ -650,7 +650,7 @@ class Tester(unittest.TestCase):
                         'geojson', 'land_cover_layers', ['center_points_test3']
                     )[0],
                     'SELECTED' : False,
-                    'ATTRIBUTE_BLACK_LIST' : [],
+                    'CENTER_POINT_ATTRIBUTES' : ['type'],
                     'CONSTRAINT_LINE_LAYERS' : self.getInputLayers(
                         'geojson', 'land_cover_layers', ['fence', 'road', 'boundaries']
                     ),
@@ -667,7 +667,7 @@ class Tester(unittest.TestCase):
                         'geojson', 'land_cover_layers', ['center_points_test4']
                     )[0],
                     'SELECTED' : False,
-                    'ATTRIBUTE_BLACK_LIST' : [],
+                    'CENTER_POINT_ATTRIBUTES' : ['type'],
                     'CONSTRAINT_LINE_LAYERS' : self.getInputLayers(
                         'geojson', 'land_cover_layers', ['fence', 'road', 'boundaries']
                     ),
@@ -684,7 +684,7 @@ class Tester(unittest.TestCase):
                         'geojson', 'land_cover_layers', ['center_points_test5']
                     )[0],
                     'SELECTED' : False,
-                    'ATTRIBUTE_BLACK_LIST' : [],
+                    'CENTER_POINT_ATTRIBUTES' : ['type'],
                     'CONSTRAINT_LINE_LAYERS' : self.getInputLayers(
                         'geojson', 'land_cover_layers', ['fence', 'road', 'boundaries']
                     ),
@@ -701,7 +701,7 @@ class Tester(unittest.TestCase):
                         'geojson', 'land_cover_layers', ['center_points_test1']
                     )[0],
                     'SELECTED' : False,
-                    'ATTRIBUTE_BLACK_LIST' : [],
+                    'CENTER_POINT_ATTRIBUTES' : ['type'],
                     'CONSTRAINT_LINE_LAYERS' : self.getInputLayers(
                         'geojson', 'land_cover_layers', ['fence', 'road', 'boundaries_within_geo_bounds']
                     ),
@@ -720,7 +720,7 @@ class Tester(unittest.TestCase):
                         'geojson', 'land_cover_layers', ['center_points_test2']
                     )[0],
                     'SELECTED' : False,
-                    'ATTRIBUTE_BLACK_LIST' : [],
+                    'CENTER_POINT_ATTRIBUTES' : ['type'],
                     'CONSTRAINT_LINE_LAYERS' : self.getInputLayers(
                         'geojson', 'land_cover_layers', ['fence', 'road', 'boundaries_within_geo_bounds']
                     ),
@@ -739,7 +739,7 @@ class Tester(unittest.TestCase):
                         'geojson', 'land_cover_layers', ['center_points_test3']
                     )[0],
                     'SELECTED' : False,
-                    'ATTRIBUTE_BLACK_LIST' : [],
+                    'CENTER_POINT_ATTRIBUTES' : ['type'],
                     'CONSTRAINT_LINE_LAYERS' : self.getInputLayers(
                         'geojson', 'land_cover_layers', ['fence', 'road', 'boundaries_within_geo_bounds']
                     ),
@@ -758,7 +758,7 @@ class Tester(unittest.TestCase):
                         'geojson', 'land_cover_layers', ['center_points_test4']
                     )[0],
                     'SELECTED' : False,
-                    'ATTRIBUTE_BLACK_LIST' : [],
+                    'CENTER_POINT_ATTRIBUTES' : ['type'],
                     'CONSTRAINT_LINE_LAYERS' : self.getInputLayers(
                         'geojson', 'land_cover_layers', ['fence', 'road', 'boundaries_within_geo_bounds']
                     ),
@@ -777,7 +777,7 @@ class Tester(unittest.TestCase):
                         'geojson', 'land_cover_layers', ['center_points_test5']
                     )[0],
                     'SELECTED' : False,
-                    'ATTRIBUTE_BLACK_LIST' : [],
+                    'CENTER_POINT_ATTRIBUTES' : ['type'],
                     'CONSTRAINT_LINE_LAYERS' : self.getInputLayers(
                         'geojson', 'land_cover_layers', ['fence', 'road', 'boundaries_within_geo_bounds']
                     ),

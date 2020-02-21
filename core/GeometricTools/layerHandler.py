@@ -1380,7 +1380,7 @@ class LayerHandler(QObject):
                 outputBoundarySink.addFeature(feat, QgsFeatureSink.FastInsert)
 
     def getPolygonsFromCenterPointsAndBoundaries(self, inputCenterPointLyr, constraintLineLyrList=None, \
-            constraintPolygonLyrList=None, attributeBlackList=None, geographicBoundaryLyr=None,\
+            constraintPolygonLyrList=None, centerPointAttributes=None, geographicBoundaryLyr=None,\
             onlySelected=False, context=None, feedback=None, algRunner=None):
         """
         
@@ -1394,7 +1394,7 @@ class LayerHandler(QObject):
         constraintPolygonList = [] if constraintPolygonLyrList is None else constraintPolygonLyrList
         constraintPolygonListWithGeoBounds = constraintPolygonList + [geographicBoundaryLyr] \
             if geographicBoundaryLyr is not None else constraintPolygonList
-        attributeBlackList = [] if attributeBlackList is None else attributeBlackList
+        centerPointAttributes = [] if centerPointAttributes is None else centerPointAttributes
         
         multiStepFeedback = QgsProcessingMultiStepFeedback(5, feedback)
         #1. Merge Polygon lyrs into one
@@ -1431,13 +1431,13 @@ class LayerHandler(QObject):
             inputCenterPointLyr,
             builtPolygonLyr,
             constraintPolygonList=constraintPolygonList,
-            attributeBlackList = attributeBlackList,
+            centerPointAttributes = centerPointAttributes,
             context=context,
             feedback=multiStepFeedback
         )
 
     def relateCenterPointsWithPolygons(self, inputCenterPointLyr, builtPolygonLyr,\
-        constraintPolygonList=None, attributeBlackList=None, context=None, feedback=None):
+        constraintPolygonList=None, centerPointAttributes=None, context=None, feedback=None):
         """
         1. Merge constraint polygon list;
         2. Build search structure into constraint polygon list
@@ -1461,6 +1461,7 @@ class LayerHandler(QObject):
         builtPolygonToCenterPointDict = self.buildCenterPolygonToCenterPointDict(
             inputCenterPointLyr,
             builtPolygonLyr,
+            centerPointAttributes=centerPointAttributes,
             feedback=multiStepFeedback
         )
         multiStepFeedback.setCurrentStep(3)
@@ -1473,7 +1474,7 @@ class LayerHandler(QObject):
         return polygonList, flagList
 
     def buildCenterPolygonToCenterPointDict(self, inputCenterPointLyr, builtPolygonLyr,\
-        attributeBlackList=None, feedback=None):
+        centerPointAttributes=None, feedback=None):
         """
         Returns a dict in the following format:
         {
@@ -1485,10 +1486,6 @@ class LayerHandler(QObject):
         builtPolygonToCenterPointDict = dict()
         iterator, featCount = self.getFeatureList(builtPolygonLyr, onlySelected=False)
         size = 100/featCount if featCount else 0
-        columns = self.getAttributesFromBlackList(
-            inputCenterPointLyr,
-            attributeBlackList=attributeBlackList
-        )
         for current, feat in enumerate(builtPolygonLyr.getFeatures()):
             if feedback is not None and feedback.isCanceled():
                 break
@@ -1505,7 +1502,7 @@ class LayerHandler(QObject):
                 if feedback is not None and feedback.isCanceled():
                     break
                 if engine.intersects(pointFeat.geometry().constGet()):
-                    attrKey = ','.join(['{}'.format(pointFeat[column]) for column in columns])
+                    attrKey = ','.join(['{}'.format(pointFeat[column]) for column in centerPointAttributes])
                     builtPolygonToCenterPointDict[geomKey][attrKey].append(pointFeat)
             if feedback is not None:
                 feedback.setCurrentStep(current * size)

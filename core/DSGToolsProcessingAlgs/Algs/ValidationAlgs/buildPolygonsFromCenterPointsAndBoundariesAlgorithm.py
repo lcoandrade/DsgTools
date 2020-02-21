@@ -42,7 +42,7 @@ from .validationAlgorithm import ValidationAlgorithm
 class BuildPolygonsFromCenterPointsAndBoundariesAlgorithm(ValidationAlgorithm):
     INPUT_CENTER_POINTS = 'INPUT_CENTER_POINTS'
     SELECTED = 'SELECTED'
-    ATTRIBUTE_BLACK_LIST = 'ATTRIBUTE_BLACK_LIST'
+    CENTER_POINT_ATTRIBUTES = 'CENTER_POINT_ATTRIBUTES'
     CONSTRAINT_LINE_LAYERS = 'CONSTRAINT_LINE_LAYERS'
     CONSTRAINT_POLYGON_LAYERS = 'CONSTRAINT_POLYGON_LAYERS'
     GEOGRAPHIC_BOUNDARY = 'GEOGRAPHIC_BOUNDARY'
@@ -68,13 +68,13 @@ class BuildPolygonsFromCenterPointsAndBoundariesAlgorithm(ValidationAlgorithm):
         )
         self.addParameter(
             QgsProcessingParameterField(
-                self.ATTRIBUTE_BLACK_LIST, 
-                self.tr('Fields to ignore'),
-                None, 
-                'INPUT_CENTER_POINTS', 
+                self.CENTER_POINT_ATTRIBUTES, 
+                self.tr('Fields to consider'),
+                None,
+                'INPUT_CENTER_POINTS',
                 QgsProcessingParameterField.Any,
                 allowMultiple=True,
-                optional = True
+                optional=False
             )
         )
         self.addParameter(
@@ -132,6 +132,11 @@ class BuildPolygonsFromCenterPointsAndBoundariesAlgorithm(ValidationAlgorithm):
                     self.INPUT_CENTER_POINTS
                 )
             )
+        centerPointAttributes = self.parameterAsFields(
+            parameters,
+            self.CENTER_POINT_ATTRIBUTES,
+            context
+        )
         constraintLineLyrList = self.parameterAsLayerList(
             parameters,
             self.CONSTRAINT_LINE_LAYERS,
@@ -174,6 +179,7 @@ class BuildPolygonsFromCenterPointsAndBoundariesAlgorithm(ValidationAlgorithm):
             geographicBoundaryLyr=geographicBoundaryLyr,
             constraintLineLyrList=constraintLineLyrList,
             constraintPolygonLyrList=constraintPolygonLyrList,
+            centerPointAttributes=centerPointAttributes,
             onlySelected=onlySelected,
             context=context,
             feedback=feedback,
