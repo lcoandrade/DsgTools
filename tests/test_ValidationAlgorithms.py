@@ -611,7 +611,7 @@ class Tester(unittest.TestCase):
             ],
             "dsgtools:buildpolygonsfromcenterpointsandboundariesalgorithm" : [
                 {
-                    '__comment' : "'Normal' test: checks if it works.",
+                    '__comment' : "test 1 - 'Normal' test: checks if it works.",
                     "INPUT_CENTER_POINTS" : self.getInputLayers(
                         'geojson', 'land_cover_layers', ['center_points_test1']
                     )[0],
@@ -628,7 +628,7 @@ class Tester(unittest.TestCase):
                     'FLAGS' : "memory:"
                 },
                 {
-                    '__comment' : "'Normal' test: checks if it works.",
+                    '__comment' : "test 2 - Built polygon without center points",
                     "INPUT_CENTER_POINTS" : self.getInputLayers(
                         'geojson', 'land_cover_layers', ['center_points_test2']
                     )[0],
@@ -645,7 +645,7 @@ class Tester(unittest.TestCase):
                     'FLAGS' : "memory:"
                 },
                 {
-                    '__comment' : "'Normal' test: checks if it works.",
+                    '__comment' : "test 3 - Duplicated center point",
                     "INPUT_CENTER_POINTS" : self.getInputLayers(
                         'geojson', 'land_cover_layers', ['center_points_test3']
                     )[0],
@@ -662,7 +662,7 @@ class Tester(unittest.TestCase):
                     'FLAGS' : "memory:"
                 },
                 {
-                    '__comment' : "'Normal' test: checks if it works.",
+                    '__comment' : "test 4 - 'Normal' test: checks if it works.",
                     "INPUT_CENTER_POINTS" : self.getInputLayers(
                         'geojson', 'land_cover_layers', ['center_points_test4']
                     )[0],
@@ -679,7 +679,7 @@ class Tester(unittest.TestCase):
                     'FLAGS' : "memory:"
                 },
                 {
-                    '__comment' : "'Normal' test: checks if it works.",
+                    '__comment' : "test 5 - 'Normal' test: checks if it works.",
                     "INPUT_CENTER_POINTS" : self.getInputLayers(
                         'geojson', 'land_cover_layers', ['center_points_test5']
                     )[0],
@@ -1385,13 +1385,6 @@ class Tester(unittest.TestCase):
         self.assertEqual(
             self.testAlg("dsgtools:identifydangles"), ""
         )
-
-
-def run_all():
-    """Default function that is called by the runner if nothing else is specified"""
-    suite = unittest.TestSuite()
-    suite.addTests(unittest.makeSuite(Tester, 'test_'))
-    unittest.TextTestRunner(verbosity=3, stream=sys.stdout).run(suite)
     
     def test_identifyunsharedvertexonintersectionsalgorithm(self):
         self.assertEqual(

@@ -642,6 +642,8 @@ class LayerHandler(QObject):
         """
         spatialIdx = QgsSpatialIndex()
         idDict = {}
+        if not inputLyr: #in case of None or [] inputLyr
+            return spatialIdx, idDict 
         featCount = inputLyr.featureCount()
         size = 100/featCount if featCount else 0
         iterator = inputLyr.getFeatures() if featureRequest is None else inputLyr.getFeatures(featureRequest)
@@ -1447,7 +1449,7 @@ class LayerHandler(QObject):
         """
         multiStepFeedback = QgsProcessingMultiStepFeedback(4, feedback)
         multiStepFeedback.setCurrentStep(0)
-        constraintPolygonLyr = self.algRunner.runMergeVectorLayers(
+        constraintPolygonLyr = [] if not constraintPolygonList else self.algRunner.runMergeVectorLayers(
             constraintPolygonList,
             context,
             feedback=multiStepFeedback
