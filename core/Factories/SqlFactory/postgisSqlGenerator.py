@@ -1177,6 +1177,8 @@ class PostGISSqlGenerator(SqlGenerator):
             sql = 'ALTER DATABASE "{0}" SET search_path = "$user", public, topology,\'edgv\',\'dominios\';'.format(dbName)
         elif version == '3.0':
             sql = 'ALTER DATABASE "{0}" SET search_path = "$user", public, topology,\'edgv\',\'complexos\',\'dominios\';'.format(dbName)
+        elif version == '3.0 Pro':
+            sql = 'ALTER DATABASE "{0}" SET search_path = "$user", public, topology,\'edgv\',\'dominios\';'.format(dbName)
         elif version == 'FTer_2a_Ed':
             sql = 'ALTER DATABASE "{0}" SET search_path = "$user", public, topology,\'pe\',\'ge\',\'complexos\',\'dominios\';'.format(dbName)
         return sql

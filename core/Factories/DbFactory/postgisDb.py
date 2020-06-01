@@ -2784,13 +2784,13 @@ class PostgisDb(AbstractDb):
         edgvPath = ''
         if version == '2.1.3':
             edgvPath = os.path.join(currentPath,'..','..','..','core','DbModels','PostGIS', '213', 'edgv213.sql')
-        elif version == '2.1.3 Pro' or 'EDGV 2.1.3 Pro':
+        elif version == '2.1.3 Pro' or version == 'EDGV 2.1.3 Pro':
             edgvPath = os.path.join(currentPath,'..','..','..','core','DbModels','PostGIS', '213_Pro', 'edgv213_pro.sql')
         elif version == 'FTer_2a_Ed':
             edgvPath = os.path.join(currentPath,'..','..','..','core','DbModels','PostGIS', 'FTer_2a_Ed', 'edgvFter_2a_Ed.sql')
         elif version == '3.0':
             edgvPath = os.path.join(currentPath,'..','..','..','core','DbModels','PostGIS', '3', 'edgv3.sql')
-        elif version == '3.0 Pro':
+        elif version == '3.0 Pro' or version == 'EDGV 3.0 Pro':
             edgvPath = os.path.join(currentPath,'..','..','..','core','DbModels','PostGIS', '3_Pro', 'edgv3_pro.sql')
         elif version == 'admin':
             edgvPath = os.path.join(currentPath,'..','..','..','core','DbModels','PostGIS', 'admin', 'dsgtools_admindb.sql')

@@ -28,7 +28,7 @@
     </widget>
    </item>
    <item row="0" column="1">
-    <widget class="QgsProjectionSelectionWidget" name="mQgsProjectionSelectionWidget">
+    <widget class="QgsProjectionSelectionWidget" name="mQgsProjectionSelectionWidget" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -70,6 +70,11 @@
        <string>3.0</string>
       </property>
      </item>
+     <item>
+      <property name="text">
+       <string>3.0 Pro</string>
+      </property>
+     </item>
     </widget>
    </item>
    <item row="2" column="0">
@@ -103,7 +108,7 @@
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
-     <property name="saveCollapsedState">
+     <property name="saveCollapsedState" stdset="0">
       <bool>false</bool>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
