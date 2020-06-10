@@ -29,7 +29,7 @@ class GeopackageSqlGenerator(SpatialiteSqlGenerator):
         """
         Gets the version of the data model.
         """
-        sql = "SELECT edgvversion FROM db_metadata LIMIT 1"
+        sql = "SELECT edgvversion FROM public_db_metadata LIMIT 1"
         return sql
 
     def getSrid(self, parameters = dict()):
