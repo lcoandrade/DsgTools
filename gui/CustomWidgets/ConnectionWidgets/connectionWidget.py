@@ -84,17 +84,20 @@ class ConnectionWidget(QtWidgets.QWidget, FORM_CLASS):
         self.crs = None
         
         self.abstractDb = None
-        self.isSpatialite = False
+        self.driver = "postgis"
         self.abstractDbFactory = DbFactory()
         self.utils = Utils()
 
         #populating the postgis combobox
         self.comboBoxPostgis.clear()
-        self.spatialiteFileEdit.setReadOnly(True)   
+        self.spatialiteFileEdit.setReadOnly(True)
+        self.gpkgFileEdit.setReadOnly(True)
         self.postGISCrsEdit.setReadOnly(True)
-        self.spatialiteCrsEdit.setReadOnly(True)   
+        self.spatialiteCrsEdit.setReadOnly(True)
+        self.gpkgCrsEdit.setReadOnly(True)
         self.edgvSpatialiteVersionEdit.setReadOnly(True)
-        self.edgvPostgisVersionEdit.setReadOnly(True)      
+        self.edgvGpkgVersionEdit.setReadOnly(True)
+        self.edgvPostgisVersionEdit.setReadOnly(True)
 
     def setInitialState(self):
         """
@@ -114,11 +117,14 @@ class ConnectionWidget(QtWidgets.QWidget, FORM_CLASS):
 
         #populating the postgis combobox
         self.comboBoxPostgis.clear()
-        self.spatialiteFileEdit.setReadOnly(True)   
+        self.spatialiteFileEdit.setReadOnly(True)
+        self.gpkgFileEdit.setReadOnly(True)
         self.postGISCrsEdit.setReadOnly(True)
-        self.spatialiteCrsEdit.setReadOnly(True)   
+        self.spatialiteCrsEdit.setReadOnly(True)
+        self.gpkgCrsEdit.setReadOnly(True)
         self.edgvSpatialiteVersionEdit.setReadOnly(True)
-        self.edgvPostgisVersionEdit.setReadOnly(True)      
+        self.edgvGpkgVersionEdit.setReadOnly(True)
+        self.edgvPostgisVersionEdit.setReadOnly(True)
 
     @pyqtSlot(int)
     def on_comboBoxPostgis_currentIndexChanged(self):
@@ -141,6 +147,15 @@ class ConnectionWidget(QtWidgets.QWidget, FORM_CLASS):
         self.loadDatabase()
         if self.isDBConnected():
             self.connectionChanged.emit()
+
+    @pyqtSlot(bool)
+    def on_gpkgOpenFile_clicked(self):  
+        """
+        Loads a Geopackage database
+        """
+        self.loadDatabase()
+        if self.isDBConnected():
+            self.connectionChanged.emit()
         
     @pyqtSlot(int)
     def on_tabWidget_currentChanged(self):
@@ -156,21 +171,28 @@ class ConnectionWidget(QtWidgets.QWidget, FORM_CLASS):
         self.serverWidget.serversCombo.setCurrentIndex(0)
         self.spatialiteFileEdit.setReadOnly(True)
         self.spatialiteFileEdit.setText(self.filename)
+        self.gpkgFileEdit.setReadOnly(True)
+        self.gpkgFileEdit.setText(self.filename)
         self.postGISCrsEdit.setText('')
         self.postGISCrsEdit.setReadOnly(True)
         self.spatialiteCrsEdit.setText('')
-        self.spatialiteCrsEdit.setReadOnly(True)   
+        self.spatialiteCrsEdit.setReadOnly(True)
+        self.gpkgCrsEdit.setText('')
+        self.gpkgCrsEdit.setReadOnly(True)
         self.edgvSpatialiteVersionEdit.setText('')
         self.edgvSpatialiteVersionEdit.setReadOnly(True)
+        self.edgvGpkgVersionEdit.setText('')
+        self.edgvGpkgVersionEdit.setReadOnly(True)
         self.edgvPostgisVersionEdit.setText('')
         self.edgvPostgisVersionEdit.setReadOnly(True)
         self.mGroupBox.setTitle(self.tr('Database connection'))
-        
         #Setting the database type
         if self.tabWidget.currentIndex() == 1:
-            self.isSpatialite = True
+            self.driver = "spatialite"
+        elif self.tabWidget.currentIndex() == 2:
+            self.driver = "geopackage"
         else:
-            self.isSpatialite = False
+            self.driver = "postgis"
 
     def loadDatabase(self):
         """
@@ -178,12 +200,16 @@ class ConnectionWidget(QtWidgets.QWidget, FORM_CLASS):
         """
         self.closeDatabase()
         try:
-            if self.isSpatialite:
+            if self.driver == "spatialite":
                 self.abstractDb = self.abstractDbFactory.createDbFactory(DsgEnums.DriverSpatiaLite)
                 self.abstractDb.connectDatabase()
                 self.spatialiteFileEdit.setText(self.abstractDb.db.databaseName())
                 self.edgvSpatialiteVersionEdit.setText(self.abstractDb.getDatabaseVersion())
-                    
+            elif self.driver == "geopackage":
+                self.abstractDb = self.abstractDbFactory.createDbFactory(DsgEnums.DriverGeopackage)
+                self.abstractDb.connectDatabase()
+                self.gpkgFileEdit.setText(self.abstractDb.db.databaseName())
+                self.edgvGpkgVersionEdit.setText(self.abstractDb.getDatabaseVersion())
             else:
                 self.abstractDb = self.abstractDbFactory.createDbFactory(DsgEnums.DriverPostGIS)
                 (host, port, user, password) = self.serverWidget.getServerParameters()
@@ -191,10 +217,9 @@ class ConnectionWidget(QtWidgets.QWidget, FORM_CLASS):
                 self.abstractDb.connectDatabaseWithParameters(host, port, dbName, user, password)
                 self.edgvPostgisVersionEdit.setText(self.abstractDb.getDatabaseVersion())
                 serverName = self.serverWidget.serversCombo.currentText()
-                newText = dbName + self.tr(' on ') + serverName 
+                newText = dbName + self.tr(' on ') + serverName
                 self.mGroupBox.setToolTip(newText)
                 # self.mGroupBox.setTitle(newText)
-
             self.abstractDb.checkAndOpenDb()
             self.dbLoaded = True
             self.dbVersion = self.abstractDb.getDatabaseVersion()
@@ -220,9 +245,12 @@ class ConnectionWidget(QtWidgets.QWidget, FORM_CLASS):
                 self.problemOccurred.emit(self.tr('Coordinate Reference System not set or invalid!'))
             else:
                 self.crs = QgsCoordinateReferenceSystem(self.epsg, QgsCoordinateReferenceSystem.EpsgCrsId)
-                if self.isSpatialite:
+                if self.driver == "spatialite":
                     self.spatialiteCrsEdit.setText(self.crs.description())
                     self.spatialiteCrsEdit.setReadOnly(True)
+                elif self.driver == "geopackage":
+                    self.gpkgCrsEdit.setText(self.crs.description())
+                    self.gpkgCrsEdit.setReadOnly(True)
                 else:
                     self.postGISCrsEdit.setText(self.crs.description())
                     self.postGISCrsEdit.setReadOnly(True)
@@ -230,7 +258,6 @@ class ConnectionWidget(QtWidgets.QWidget, FORM_CLASS):
             self.problemOccurred.emit(self.tr('A problem occurred! Check log for details.'))
             QgsMessageLog.logMessage(':'.join(e.args), "DSGTools Plugin", Qgis.Critical)
 
-        
     def isDBConnected(self):
         """
         Checks if the database is already loaded
@@ -274,7 +301,6 @@ class ConnectionWidget(QtWidgets.QWidget, FORM_CLASS):
                 self.comboBoxPostgis.addItem(self.tr('Select Database'))
                 for db, version in dbList:
                     self.comboBoxPostgis.addItem(db)
-                
             else:
                 self.setInitialState()
                 QApplication.restoreOverrideCursor()

@@ -97,10 +97,11 @@ class CustomTableSelector(QtWidgets.QWidget, FORM_CLASS):
         self.toTreeWidget.setHeaderLabels(headerList)
         self.setFilterColumn(customNumber = customNumber)
     
-    def setInitialState(self, fromDictList, unique=False, selectedDictList = []):
+    def setInitialState(self, fromDictList, unique=False, selectedDictList=None):
         """
         Sets the initial state
         """
+        selectedDictList = list() if selectedDictList is None else selectedDictList
         self.fromLs = []
         self.toLs = []
         self.fromTreeWidget.clear()
