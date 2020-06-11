@@ -30,7 +30,7 @@ from qgis.PyQt.Qt import QObject
 
 # QGIS imports
 from qgis.core import QgsVectorLayer,QgsDataSourceUri, QgsMessageLog, QgsField, \
-                      QgsWkbTypes, QgsVectorLayerJoinInfo
+                      QgsWkbTypes, QgsVectorLayerJoinInfo, Qgis
 from qgis.utils import iface
 
 #DsgTools imports

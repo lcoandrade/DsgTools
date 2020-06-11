@@ -21,10 +21,18 @@
  ***************************************************************************/
 """
 import os
+from collections import defaultdict
 
-from qgis.core import QgsVectorLayer, QgsMessageLog, QgsCoordinateReferenceSystem, Qgis, QgsProject
+from qgis.core import (Qgis,
+                       QgsProject,
+                       QgsMessageLog,
+                       QgsVectorLayer,
+                       QgsEditorWidgetSetup,
+                       QgsCoordinateReferenceSystem)
+from qgis.PyQt.QtSql import QSqlQuery
 
 from .spatialiteLayerLoader import SpatialiteLayerLoader
+from DsgTools.gui.CustomWidgets.BasicInterfaceWidgets.progressWidget import ProgressWidget
 
 class GeopackageLayerLoader(SpatialiteLayerLoader):
     def __init__(self, iface, abstractDb, loadCentroids):
@@ -40,6 +48,111 @@ class GeopackageLayerLoader(SpatialiteLayerLoader):
             return
 
         self.buildUri()
+
+    def specialEdgvAttributes(self):
+        """
+        Gets the list of attributes shared by many EDGV classes and have a different domain
+        depending on which category the EDGV class belongs to.
+        :return: (list-of-str) list of "special" EDGV classes. 
+        """
+        return ["finalidade", "relacionado", "coincidecomdentrode", "tipo"]
+
+    def tableFields(self, table):
+        """
+        Gets all attribute names for a table.
+        :return: (list-of-str) list of attribute names.
+        """
+        return self.abstractDb.tableFields(table)
+
+    def getAllEdgvDomainsFromTableName(self, schema, table):
+        """
+        EDGV databases deployed by DSGTools have a set of domain tables. Gets the value map from such DB.
+        It checks for all attributes found.
+        :param table: (str) layer to be checked for its EDGV mapping.
+        :return: (dict) value map for all attributes that have one.
+        """
+        self.abstractDb.checkAndOpenDb()
+        ret = defaultdict(dict)
+        db = self.abstractDb.db
+        edgv = self.abstractDb.getDatabaseVersion()
+        sql = 'select code, code_name from dominios_{field} order by code'
+        for fieldName in self.tableFields(schema + "_" + table):
+            if fieldName in self.specialEdgvAttributes():
+                # EDGV "special" attributes that are have different domains depending on
+                # which class it belongs to
+                if edgv in ("2.1.3 Pro", "3.0 Pro"):
+                    # Pro versions now follow the logic "{attribute}_{CLASS_NAME}"
+                    cat = table.rsplit("_", 1)[0].split("_", 1)[-1]
+                else:
+                    cat = table.split("_")[0]
+                attrTable = "{attribute}_{cat}".format(attribute=fieldName, cat=cat)
+                query = QSqlQuery(sql.format(field=attrTable), db)
+            else:
+                query = QSqlQuery(sql.format(field=fieldName), db)
+            if not query.isActive():
+                continue
+            while query.next():
+                code = str(query.value(0))
+                code_name = query.value(1)
+                ret[fieldName][code_name] = code
+        return ret
+
+    def load(self, inputList, useQml=False, uniqueLoad=False, useInheritance=False, stylePath=None, onlyWithElements=False, geomFilterList=[], isEdgv=True, customForm=False, editingDict=None, parent=None):
+        """
+        1. Get loaded layers
+        2. Filter layers;
+        3. Load domains;
+        4. Get Aux Dicts;
+        5. Build Groups;
+        6. Load Layers;
+        """
+        self.iface.mapCanvas().freeze() #done to speedup things
+        layerList, isDictList = self.preLoadStep(inputList)
+        #2. Filter Layers:
+        filteredLayerList = self.filterLayerList(layerList, False, onlyWithElements, geomFilterList)
+        filteredDictList = [i for i in inputList if i['tableName'] in filteredLayerList] if isDictList else filteredLayerList
+        edgvVersion = self.abstractDb.getDatabaseVersion()
+        rootNode = QgsProject.instance().layerTreeRoot()
+        dbNode = self.getDatabaseGroup(rootNode)
+        #3. Load Domains
+        #do this only if EDGV Version = FTer
+        # domLayerDict = self.loadDomains(filteredLayerList, dbNode, edgvVersion)
+        #4. Get Aux dicts
+        lyrDict = self.getLyrDict(filteredDictList, isEdgv=isEdgv)
+        #5. Build Groups
+        groupDict = self.prepareGroups(dbNode, lyrDict)
+        #5. load layers
+        if parent:
+            primNumber = 0
+            for prim in list(lyrDict.keys()):
+                for cat in list(lyrDict[prim].keys()):
+                    for lyr in lyrDict[prim][cat]:
+                        primNumber += 1
+            localProgress = ProgressWidget(1, primNumber-1, self.tr('Loading layers... '), parent=parent)
+        loadedDict = dict()
+        for prim in list(lyrDict.keys()):
+            for cat in list(lyrDict[prim].keys()):
+                for lyr in lyrDict[prim][cat]:
+                    try:
+                        vlayer = self.loadLayer(lyr, groupDict[prim][cat], uniqueLoad, stylePath, None)
+                        if vlayer:
+                            if isinstance(lyr, dict):
+                                key = lyr['lyrName']
+                            else:
+                                key = lyr
+                            loadedDict[key]=vlayer
+                    except Exception as e:
+                        if isinstance(lyr, dict):
+                            key = lyr['lyrName']
+                        else:
+                            key = lyr
+                        self.logErrorDict[key] = self.tr('Error for layer ')+key+': '+':'.join(e.args)
+                        self.logError()
+                    if parent:
+                        localProgress.step()
+        self.removeEmptyNodes(dbNode)
+        self.iface.mapCanvas().freeze(False) #done to speedup things
+        return loadedDict
 
     def loadLayer(self, inputParam, parentNode, uniqueLoad, stylePath, domLayerDict):
         """
@@ -58,11 +171,15 @@ class GeopackageLayerLoader(SpatialiteLayerLoader):
         vlayer = self.getLayerByName("{0}_{1}".format(schema, tableName))
         if not vlayer.isValid():
             QgsMessageLog.logMessage(vlayer.error().summary(), "DSGTools Plugin", Qgis.Critical)
-        QgsProject.instance().addMapLayer(vlayer, addToLegend = False)
+        QgsProject.instance().addMapLayer(vlayer, addToLegend=False)
         crs = QgsCoordinateReferenceSystem(int(srid), QgsCoordinateReferenceSystem.EpsgCrsId)
         vlayer.setCrs(crs)
-        vlayer = self.setDomainsAndRestrictionsWithQml(vlayer)
-        vlayer = self.setMulti(vlayer,domLayerDict)
+        # vlayer = self.setDomainsAndRestrictionsWithQml(vlayer)
+        for field, valueMap in self.getAllEdgvDomainsFromTableName(schema, tableName).items():
+            fieldIndex = vlayer.fields().indexFromName(field)
+            widgetSetup = QgsEditorWidgetSetup("ValueMap", {"map": valueMap[field]})
+            vlayer.setEditorWidgetSetup(fieldIndex, widgetSetup)
+        # vlayer = self.setMulti(vlayer, domLayerDict)
         if stylePath:
             fullPath = self.getStyle(stylePath, tableName)
             if fullPath:

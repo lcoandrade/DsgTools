@@ -93,3 +93,11 @@ class GeopackageSqlGenerator(SpatialiteSqlGenerator):
                 FROM gpkg_geometry_columns
                 ORDER BY table_name ASC"""
         return sql
+
+    def tableFields(self, table):
+        """
+        Gets all attribute names for a table.
+        :param table: (str) table name.
+        :return: (list-of-str) list of attribute names.
+        """
+        return """PRAGMA table_info('{0}');""".format(table)

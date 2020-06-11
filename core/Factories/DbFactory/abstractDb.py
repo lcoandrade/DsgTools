@@ -767,10 +767,10 @@ class AbstractDb(QObject):
         return qmlDict
     
     def getQml(self, layerName):
-        if self.getDatabaseVersion() == '3.0':
-            return (self.getQmlRecordDict(layerName), 'db')
-        else:
-            return (self.getQmlDir(), 'dir')
+        # if self.getDatabaseVersion() == '3.0':
+        #     return (self.getQmlRecordDict(layerName), 'db')
+        # else:
+        return (self.getQmlDir(), 'dir')
 
     def implementationVersion(self):
         """
