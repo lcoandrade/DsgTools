@@ -177,7 +177,7 @@ class GeopackageLayerLoader(SpatialiteLayerLoader):
         # vlayer = self.setDomainsAndRestrictionsWithQml(vlayer)
         for field, valueMap in self.getAllEdgvDomainsFromTableName(schema, tableName).items():
             fieldIndex = vlayer.fields().indexFromName(field)
-            widgetSetup = QgsEditorWidgetSetup("ValueMap", {"map": valueMap[field]})
+            widgetSetup = QgsEditorWidgetSetup("ValueMap", {"map": valueMap})
             vlayer.setEditorWidgetSetup(fieldIndex, widgetSetup)
         # vlayer = self.setMulti(vlayer, domLayerDict)
         if stylePath:
