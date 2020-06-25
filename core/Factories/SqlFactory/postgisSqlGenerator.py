@@ -899,7 +899,7 @@ class PostGISSqlGenerator(SqlGenerator):
     
     def createStyleTable(self):
         sql = """
-        CREATE TABLE public.layer_styles
+        CREATE TABLE IF NOT EXISTS public.layer_styles
         (
           id serial NOT NULL,
           f_table_catalog character varying,
