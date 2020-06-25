@@ -21,6 +21,7 @@
  ***************************************************************************/
 """
 import os
+import json
 from collections import defaultdict
 
 from qgis.core import (Qgis,
@@ -64,6 +65,33 @@ class GeopackageLayerLoader(SpatialiteLayerLoader):
         """
         return self.abstractDb.tableFields(table)
 
+    def domainMapping(self, modelVersion):
+        """
+        Identifies wich table and attribute is related to all tables available
+        in the database that has a mapping (FK to a domain table).
+        :param modelVersion: (str) which model version is identified (e.g. 3.0)
+        :return: (dict) mapping from each layer's attributes to its FK relative
+        - Mapping format:
+            {
+                "schema_layer_name": {
+                    "layer_attribute_name": [
+                        "domain_table_name",
+                        "domain_refereced_attribute_name"
+                    ]
+                }
+            }
+        """
+        basePath = os.path.join(
+            os.path.dirname(__file__), "..", "..", "DbModels", "DomainMapping")
+        path = {
+            "3.0": os.path.join(basePath, "edgv3.json")
+        }.pop(modelVersion, None)
+        if path is None or not os.path.exists(path):
+            return dict()
+        with open(path, "r") as fp:
+            # file generated based on PostGIS FK metadata
+            return json.load(fp)
+
     def getAllEdgvDomainsFromTableName(self, schema, table):
         """
         EDGV databases deployed by DSGTools have a set of domain tables. Gets the value map from such DB.
@@ -75,9 +103,14 @@ class GeopackageLayerLoader(SpatialiteLayerLoader):
         ret = defaultdict(dict)
         db = self.abstractDb.db
         edgv = self.abstractDb.getDatabaseVersion()
+        domainMap = self.domainMapping(edgv)
+        fullTablaName = schema + "_" + table
         sql = 'select code, code_name from dominios_{field} order by code'
-        for fieldName in self.tableFields(schema + "_" + table):
-            if fieldName in self.specialEdgvAttributes():
+        for fieldName in self.tableFields(fullTablaName):
+            if fullTablaName in domainMap:
+                # if domain mapping is not yet available for current version
+                fieldName = domainMap[fullTablaName][fieldName][0]
+            elif fieldName in self.specialEdgvAttributes():
                 # EDGV "special" attributes that are have different domains depending on
                 # which class it belongs to
                 if edgv in ("2.1.3 Pro", "3.0 Pro"):
