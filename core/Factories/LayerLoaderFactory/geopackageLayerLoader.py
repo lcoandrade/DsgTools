@@ -84,7 +84,8 @@ class GeopackageLayerLoader(SpatialiteLayerLoader):
         basePath = os.path.join(
             os.path.dirname(__file__), "..", "..", "DbModels", "DomainMapping")
         path = {
-            "3.0": os.path.join(basePath, "edgv3.json")
+            "3.0": os.path.join(basePath, "edgv_3.json"),
+            "2.1.3 Pro": os.path.join(basePath, "edgv_213_pro.json")
         }.pop(modelVersion, None)
         if path is None or not os.path.exists(path):
             return dict()
@@ -108,8 +109,14 @@ class GeopackageLayerLoader(SpatialiteLayerLoader):
         sql = 'select code, code_name from dominios_{field} order by code'
         for fieldName in self.tableFields(fullTablaName):
             if fullTablaName in domainMap:
+                domains = domainMap[fullTablaName]
                 # if domain mapping is not yet available for current version
-                fieldName = domainMap[fullTablaName][fieldName][0]
+                if fieldName in domains:
+                    # replace this method over querying db for the table...
+                    fieldName = domains[fieldName][0]
+                elif fieldName.replace("_", "") in domains:
+                    fieldName = domains[fieldName.replace("_", "")][0]
+                query = QSqlQuery(sql.format(field=fieldName), db)
             elif fieldName in self.specialEdgvAttributes():
                 # EDGV "special" attributes that are have different domains depending on
                 # which class it belongs to
