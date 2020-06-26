@@ -113,10 +113,12 @@ class GeopackageLayerLoader(SpatialiteLayerLoader):
                 # if domain mapping is not yet available for current version
                 if fieldName in domains:
                     # replace this method over querying db for the table...
-                    fieldName = domains[fieldName][0]
+                    domainTable = domains[fieldName][0]
                 elif fieldName.replace("_", "") in domains:
-                    fieldName = domains[fieldName.replace("_", "")][0]
-                query = QSqlQuery(sql.format(field=fieldName), db)
+                    domainTable = domains[fieldName.replace("_", "")][0]
+                else:
+                    domainTable = fieldName
+                query = QSqlQuery(sql.format(field=domainTable), db)
             elif fieldName in self.specialEdgvAttributes():
                 # EDGV "special" attributes that are have different domains depending on
                 # which class it belongs to
