@@ -84,8 +84,12 @@ class GeopackageLayerLoader(SpatialiteLayerLoader):
         basePath = os.path.join(
             os.path.dirname(__file__), "..", "..", "DbModels", "DomainMapping")
         path = {
+            "EDGV 3.0": os.path.join(basePath, "edgv_3.json"),
             "3.0": os.path.join(basePath, "edgv_3.json"),
-            "2.1.3 Pro": os.path.join(basePath, "edgv_213_pro.json")
+            "EDGV 2.1.3 Pro": os.path.join(basePath, "edgv_213_pro.json"),
+            "2.1.3 Pro": os.path.join(basePath, "edgv_213_pro.json"),
+            "EDGV 2.1.3": os.path.join(basePath, "edgv_213.json"),
+            "2.1.3": os.path.join(basePath, "edgv_213.json")
         }.pop(modelVersion, None)
         if path is None or not os.path.exists(path):
             return dict()
@@ -114,10 +118,9 @@ class GeopackageLayerLoader(SpatialiteLayerLoader):
                 if fieldName in domains:
                     # replace this method over querying db for the table...
                     domainTable = domains[fieldName][0]
-                elif fieldName.replace("_", "") in domains:
-                    domainTable = domains[fieldName.replace("_", "")][0]
                 else:
-                    domainTable = fieldName
+                    # non-mapped attribute
+                    continue
                 query = QSqlQuery(sql.format(field=domainTable), db)
             elif fieldName in self.specialEdgvAttributes():
                 # EDGV "special" attributes that are have different domains depending on

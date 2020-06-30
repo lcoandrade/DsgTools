@@ -46,11 +46,21 @@ class GeopackageDbCreator(DbCreator):
                         os.path.dirname(__file__), '..', '..', '..', 'core',
                         'DbModels', 'Geopackage', '213', 'seed_edgv213.gpkg'
                     )
+        elif version == '2.1.3 Pro' or version == 'EDGV 2.1.3 Pro':
+            return os.path.join(
+                        os.path.dirname(__file__), '..', '..', '..', 'core',
+                        'DbModels', 'Geopackage', '3', 'seed_edgv213_pro.gpkg'
+                    )
         elif version == '3.0':
             return os.path.join(
                         os.path.dirname(__file__), '..', '..', '..', 'core',
                         'DbModels', 'Geopackage', '3', 'seed_edgv3.gpkg'
                     )
+        # elif version == '3.0 Pro' or version == 'EDGV 3.0 Pro':
+        #     return os.path.join(
+        #                 os.path.dirname(__file__), '..', '..', '..', 'core',
+        #                 'DbModels', 'Geopackage', '3', 'seed_edgv30_pro.gpkg'
+        #             )
         return ''
     
     def createDb(self, dbName, srid, paramDict = dict(), parentWidget = None):
