@@ -23,11 +23,12 @@ Builds a temp rubberband with a given size and shape.
 """
 
 import os
+import json
 
 # Qt imports
 from qgis.PyQt import QtGui, uic, QtCore
 from qgis.PyQt.QtWidgets import QMessageBox, QAction
-from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtCore import QSettings, pyqtSignal, pyqtSlot, QObject
 from qgis.PyQt.Qt import QWidget, QObject
 
@@ -43,7 +44,9 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'minimumAreaTool.ui'))
 
 class MinimumAreaTool(QWidget,FORM_CLASS):
-    def __init__(self, iface, parent = None):
+    PROJECT_STATE_VAR = "minimumAreaToolState"
+
+    def __init__(self, iface, parent=None):
         """
         Constructor
         """
@@ -52,7 +55,7 @@ class MinimumAreaTool(QWidget,FORM_CLASS):
         self.parent = parent
         self.splitter.hide()
         self.iface = iface
-        self.mScaleWidget.setScaleString('1:100000')
+        self.setScaleString('1:100000')
         self.scale = None
         self.shape = None
         self.size = None
@@ -65,7 +68,7 @@ class MinimumAreaTool(QWidget,FORM_CLASS):
         text = self.tr('DSGTools: Draw Shape')
         self.shapeAction = self.add_action(icon_path, text, self.drawShape.click, parent = self.parent)
         self.iface.registerMainWindowAction(self.shapeAction, '')
-    
+
     def add_action(self, icon_path, text, callback, parent=None):
         icon = QIcon(icon_path)
         action = QAction(icon, text, parent)
@@ -107,7 +110,35 @@ class MinimumAreaTool(QWidget,FORM_CLASS):
                 self.shapesComboBox.setEnabled(True)
         else:
             self.shapesComboBox.setEnabled(True)
-    
+
+    def scaleString(self):
+        """
+        Reads the scale string from GUI.
+        :return: (str) scale string.
+        """
+        return self.mScaleWidget.scaleString()
+
+    def setScaleString(self, scale):
+        """
+        Sets a scale string to GUI.
+        :param scale: (str) scale string.
+        """
+        self.mScaleWidget.setScaleString(scale)
+
+    def color(self):
+        """
+        Reads color to be used on the generated geometry from the GUI.
+        :return: (QColor) tuple of RGBA values for the color.
+        """
+        return self.mColorButton.color()
+
+    def setColor(self, color):
+        """
+        Sets color to be used on the generated geometry to the GUI.
+        :param color: (QColor) color to be set.
+        """
+        self.mColorButton.setColor(color)
+
     @pyqtSlot(int)
     def on_sizesComboBox_currentIndexChanged(self):
         """
@@ -131,7 +162,7 @@ class MinimumAreaTool(QWidget,FORM_CLASS):
         """
         Draws the select template shape on the map canvas
         """
-        scaleText = self.mScaleWidget.scaleString()
+        scaleText = self.scaleString()
         scale = int(scaleText.split(':')[-1].replace('.','').replace(',',''))/1000
         size = self.sizesComboBox.currentText()
         shape = self.shapesComboBox.currentText()
@@ -252,7 +283,63 @@ class MinimumAreaTool(QWidget,FORM_CLASS):
         dlg = CustomSizeSetter(customSizesDict)
         dlg.sizeCreated.connect(self.addValueToCustomSizesDict)
         dlg.exec_()
-    
+
+    def state(self):
+        """
+        Reads current tool's attributes that compose its state.
+        :return: (dict) an attribute value map that represents current tool's
+                state.
+        """
+        return {
+            "scale": self.scaleString(),
+            "size": self.sizesComboBox.currentIndex(),
+            "shape": self.shapesComboBox.currentIndex(),
+            "color": self.color().getRgb()
+        }
+
+    def stateAsString(self, state):
+        """
+        Stringfied states is a simple and effective form of serializing objects for
+        QGIS environment variable settings, as well as outside QGIS systems
+        communications. This method transforms a tool's state map into a string.
+        :param state: (dict) the map to be stringfied.
+        :return: (str) stringfied tool state map.
+        """
+        return json.dumps(self.state())
+
+    def stateFromString(self, state):
+        """
+        Reverts a string into a valid tool state map.
+        :param state: (str) the map to be de-stringfied.
+        :return: (dict) an attribute value map that represents current tool's
+                state.
+        """
+        return json.loads(state)
+
+    def validateState(self, state):
+        """
+        Verifies if a map is is a valid representation of a tool's state.
+        :param state: (dict) the map to be checked.
+        :return: (bool) whether the provided map represents a tool state.
+        """
+        return True
+
+    def setState(self, state):
+        """
+        Updates tool's attributes related to its state.
+        :param state: (dict) an attribute value map that represents current tool's
+                    state.
+        :return: (bool) whether given parameters reflects tool's state after
+                aplying it.
+        """
+        if not self.validateState(state):
+            return False
+        self.setScaleString(state["scale"])
+        self.sizesComboBox.setCurrentIndex(int(state["size"])),
+        self.shapesComboBox.setCurrentIndex(int(state["shape"])),
+        self.setColor(QColor(*state["color"]))
+        return True
+
     def unload(self):
         try:
             self.iface.unregisterMainWindowAction(self.showAction)

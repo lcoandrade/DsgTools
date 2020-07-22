@@ -20,6 +20,7 @@
  ***************************************************************************/
 """
 
+from qgis.core import QgsProject, QgsExpressionContextUtils
 
 class ManagerEnumerator:
     """
@@ -91,7 +92,7 @@ def stateManagedTools():
     """
     tools = dict()
     managers = [
-        stateManagedTools(),
+        toolBoxesGuiManager(),
         mapToolsGuiManager(),
         toolbarsGuiManager()
     ]
@@ -103,7 +104,7 @@ def stateManagedTools():
         }[idx]
         tools[mName] = list()
         for attr in dir(m):
-            if hasattr(getattr(m, attr), "QGIS_STATE_VAR"):
+            if hasattr(getattr(m, attr), "PROJECT_STATE_VAR"):
                 tools[mName].append(attr)
     return tools
 
@@ -112,34 +113,26 @@ def getTool(tool):
     Accesses the loaded instance of a DSGTools tool that has its state managed.
     :param tool: (str) name of the tool to be accessed.
     """
-    tool = None
-    for mName, tools in stateManagedTools.items():
-        if tool in tools:
-            manager = {
-                "Tool box": stateManagedTools,
-                "Maptool": mapToolsGuiManager,
-                "Tool bar": toolbarsGuiManager,
-            }[mName]()
-            return getattr(manager, tool)
-
-def start():
-    """
-    Starts watching for tool modifications.
-    """
-    app()
-    print("States are now being watched/managed")
-
-def stop():
-    """
-    Disconnects state manager from all managed tools.
-    """
-    print("States no longer watched/managed")
+    managers = [
+        toolBoxesGuiManager(),
+        mapToolsGuiManager(),
+        toolbarsGuiManager()
+    ]
+    for m in managers:
+        for attr in dir(m):
+            if hasattr(getattr(m, attr), "PROJECT_STATE_VAR"):
+                return getattr(m, tool)
 
 def toolState(tool):
     """
-    
+    Gets the tool state as string.
+    :return: (str) stringfied tool state map.
     """
-    pass
+    t = getTool(tool)
+    if t is None:
+        return "{}"
+    state = t.state()
+    return t.stateAsString(state)
 
 def setToolState(tool, state):
     """
@@ -155,7 +148,8 @@ def storedToolState(tool):
 
 def saveToolState(tool, state):
     """
-    
+    Saves the state of a state managed tool to QGIS project.
+    :param tool: (str) name of the tool to have its state stored.
     """
     tool = getTool(tool)
     if tool is None:
@@ -174,7 +168,7 @@ def loadToolState(tool):
 
 def saveState():
     """
-    
+    Saves the state of all state managed tools to QGIS project.
     """
     pass
 
@@ -183,8 +177,16 @@ def loadState():
     
     """
     pass
-def getTool(tool):
+
+def start():
     """
-    
+    Starts watching for tool modifications.
     """
-    pass
+    app()
+    print("States are now being watched/managed")
+
+def stop():
+    """
+    Disconnects state manager from all managed tools.
+    """
+    print("States no longer watched/managed")
