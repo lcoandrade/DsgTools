@@ -20,35 +20,46 @@
  *                                                                         *
  ***************************************************************************/
 """
-from __future__ import absolute_import
-from builtins import object
-from qgis.PyQt.QtCore import QSettings, qVersion, QCoreApplication, QTranslator, Qt
-from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QToolButton, QMenu, QAction
 
-import os.path
 import sys
+from os import path
 
-# Initialize Qt resources from file resources_rc.py
-from . import resources_rc
-
-currentPath = os.path.dirname(__file__)
-sys.path.append(os.path.abspath(currentPath))
-
-from qgis.utils import showPluginHelp
-from qgis.core import QgsApplication
-
+currentPath = path.dirname(__file__)
+sys.path.append(path.abspath(currentPath))
 try:
     import ptvsd
     ptvsd.enable_attach(address = ('localhost', 5679))
 except Exception as e:
     pass
 
-from .gui.guiManager import GuiManager
-from .core.DSGToolsProcessingAlgs.dsgtoolsProcessingAlgorithmProvider import DSGToolsProcessingAlgorithmProvider
+from qgis.core import QgsApplication
+from qgis.utils import showPluginHelp
+from qgis.PyQt.QtCore import (Qt,
+                              qVersion,
+                              QSettings,
+                              QTranslator,
+                              QCoreApplication)
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtWidgets import QToolButton, QMenu, QAction
+
+from DsgTools import resources_rc
+from DsgTools.core.DSGToolsProcessingAlgs.dsgtoolsProcessingAlgorithmProvider import DSGToolsProcessingAlgorithmProvider
+from DsgTools.gui.guiManager import GuiManager
 
 class DsgTools(object):
     """QGIS Plugin Implementation."""
+    _instance = None
+    
+    @staticmethod
+    def instance():
+        """
+        Desgined to handle requests for a singleton's instance.
+        :return: (DsgTools) the class' instance for this app lifecycle.
+        """
+        if DsgTools._instance is None:
+            from qgis.utils import iface
+            DsgTools(iface)
+        return DsgTools._instance
 
     def __init__(self, iface):
         """Constructor.
@@ -57,17 +68,24 @@ class DsgTools(object):
             application at run time.
         :type iface: QgsInterface
         """
+        if not DsgTools._instance is None:
+            raise Exception(
+                self.tr(
+                    "This object is a singleton and an instance already "
+                    "exists. Please use 'instance' static method to access it."
+                )
+            )
         self.iface = iface
         # initialize plugin directory
-        self.plugin_dir = os.path.dirname(__file__)
+        self.plugin_dir = path.dirname(__file__)
         # initialize locale
         locale = QSettings().value('locale/userLocale')[0:2]
-        locale_path = os.path.join(
+        locale_path = path.join(
             self.plugin_dir,
             'i18n',
             'DsgTools_{}.qm'.format(locale))
 
-        if os.path.exists(locale_path):
+        if path.exists(locale_path):
             self.translator = QTranslator()
             self.translator.load(locale_path)
 
@@ -84,6 +102,7 @@ class DsgTools(object):
         self.dsgTools = None
         self.menuBar = self.iface.mainWindow().menuBar()
         self.provider = DSGToolsProcessingAlgorithmProvider()
+        DsgTools._instance = self
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):

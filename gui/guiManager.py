@@ -20,15 +20,11 @@
  ***************************************************************************/
 """
 
-from __future__ import absolute_import
-from builtins import object
-import os.path
-import sys
-
 from qgis.PyQt.QtCore import QObject, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QToolButton, QMenu, QAction
 
+from DsgTools.gui import stateManager
 from .BDGExTools.bdgexGuiManager import BDGExGuiManager
 from .LayerTools.layerToolsGuiManager import LayerToolsGuiManager
 from .ProductionTools.productionToolsGuiManager import ProductionToolsGuiManager
@@ -174,7 +170,8 @@ class GuiManager(QObject):
         self.instantiateManagers()
         for manager in self.managerList:
             manager.initGui()
-    
+        stateManager.start()
+
     def unload(self):
         for manager in self.managerList:
             manager.unload()
@@ -183,3 +180,4 @@ class GuiManager(QObject):
                 self.iface.unregisterMainWindowAction(action)
             except:
                 pass
+        stateManager.stop()
