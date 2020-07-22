@@ -22,17 +22,14 @@
 
 from qgis.core import QgsProject, QgsExpressionContextUtils
 
-class ManagerEnumerator:
-    """
-    Enumerates all DSGTools interface component managers.
-    This class is desgined to support stateManager module, hence it's not a
-    DsgToolsEnum.
-    """
-    GuiManager, ProductionToolsGuiManager, ToolBoxesGuiManager, \
-        ToolbarsGuiManager, MapToolsGuiManager = range(5)
-        
-
-printer = lambda x: print("Tool initiate {0}.".format(x))
+class NoStateFound(Exception):
+    def __init__(self, tool):
+        """
+        :param tool: (str) tool that did not have its state found.
+        """
+        self._tool = tool
+        super(NoStateFound, self).__init__(
+            "No state saved on current QGIS project for '{0}'.".format(tool))
 
 def app():
     """
@@ -136,13 +133,18 @@ def toolState(tool):
 
 def setToolState(tool, state):
     """
-    
+    Updates tool's attributes related to its state.
+    :param state: (str) stringfied tool state map.
+    :return: (bool) whether given parameters reflects tool's state after
+             aplying it.
     """
-    pass
+    t = getTool(tool)
+    s = t.stateFromString(state)
+    return t.setState(s)
 
 def storedToolState(tool):
     """
-    
+    Identifies all saved tool states on current QGIS project.
     """
     pass
 
@@ -162,15 +164,28 @@ def saveToolState(tool, state):
 
 def loadToolState(tool):
     """
-    
+    Restores a tool state from QGIS project and sets it.
     """
-    pass
+    t = getTool(tool)
+    if t is None:
+        return
+    projScope = QgsExpressionContextUtils.projectScope(QgsProject.instance())
+    state = projScope.variable(t.PROJECT_STATE_VAR)
+    if state is None:
+        raise NoStateFound(tool)
+    return t.setState(t.stateFromString(state))
 
 def saveState():
     """
     Saves the state of all state managed tools to QGIS project.
     """
-    pass
+    for tools in stateManagedTools().values():
+        for tName in tools:
+            try:
+                saveToolState(tName, toolState(tName))
+            except Exception as e:
+                # log message
+                print("Unable to save state for {0} ('{1}')".format(tName, e))
 
 def loadState():
     """
