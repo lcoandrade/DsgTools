@@ -189,9 +189,15 @@ def saveState():
 
 def loadState():
     """
-    
+    Restores the state of all state managed tools as from current QGIS project.
     """
-    pass
+    for tools in stateManagedTools().values():
+        for tName in tools:
+            try:
+                loadToolState(tName)
+            except Exception as e:
+                # log message
+                print("Unable to load state of {0} ('{1}')".format(tName, e))
 
 def start():
     """
