@@ -22,13 +22,13 @@
 
 from qgis.core import QgsProject, QgsExpressionContextUtils
 
-class NoStateFound(Exception):
+class NoStateFoundException(Exception):
     def __init__(self, tool):
         """
         :param tool: (str) tool that did not have its state found.
         """
         self._tool = tool
-        super(NoStateFound, self).__init__(
+        super(NoStateFoundException, self).__init__(
             "No state saved on current QGIS project for '{0}'.".format(tool))
 
 def app():
@@ -142,12 +142,6 @@ def setToolState(tool, state):
     s = t.stateFromString(state)
     return t.setState(s)
 
-def storedToolState(tool):
-    """
-    Identifies all saved tool states on current QGIS project.
-    """
-    pass
-
 def saveToolState(tool, state):
     """
     Saves the state of a state managed tool to QGIS project.
@@ -162,6 +156,16 @@ def saveToolState(tool, state):
         state
     )
 
+def storedToolState(tool):
+    """
+    Identifies all saved tool states on current QGIS project.
+    """
+    t = getTool(tool)
+    if t is None:
+        return
+    projScope = QgsExpressionContextUtils.projectScope(QgsProject.instance())
+    return projScope.variable(t.PROJECT_STATE_VAR)
+
 def loadToolState(tool):
     """
     Restores a tool state from QGIS project and sets it.
@@ -172,7 +176,7 @@ def loadToolState(tool):
     projScope = QgsExpressionContextUtils.projectScope(QgsProject.instance())
     state = projScope.variable(t.PROJECT_STATE_VAR)
     if state is None:
-        raise NoStateFound(tool)
+        raise NoStateFoundException(tool)
     return t.setState(t.stateFromString(state))
 
 def saveState():

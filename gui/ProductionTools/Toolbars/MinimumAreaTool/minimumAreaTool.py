@@ -206,6 +206,20 @@ class MinimumAreaTool(QWidget,FORM_CLASS):
         else:
             return False
 
+    def isToggled(self):
+        """
+        Identifies whether tool bar is toggled ("open").
+        :return: (bool) if tool bar is toggled.
+        """
+        return self.showPushButton.isChecked()
+
+    def setToggled(self, checked):
+        """
+        Set tool bar's toggling status (if it's "open").
+        :param checked: (bool) if tool bar is toggled.
+        """
+        return self.showPushButton.setChecked(checked)
+
     @pyqtSlot(bool, name = 'on_showPushButton_toggled')
     def toggleBar(self, toggled=None):
         """
@@ -294,7 +308,8 @@ class MinimumAreaTool(QWidget,FORM_CLASS):
             "scale": self.scaleString(),
             "size": self.sizesComboBox.currentIndex(),
             "shape": self.shapesComboBox.currentIndex(),
-            "color": self.color().getRgb()
+            "color": self.color().getRgb(),
+            "isOpen": self.isToggled()
         }
 
     def stateAsString(self, state):
@@ -338,6 +353,7 @@ class MinimumAreaTool(QWidget,FORM_CLASS):
         self.sizesComboBox.setCurrentIndex(int(state["size"])),
         self.shapesComboBox.setCurrentIndex(int(state["shape"])),
         self.setColor(QColor(*state["color"]))
+        self.setToggled(state["isOpen"])
         return True
 
     def unload(self):
