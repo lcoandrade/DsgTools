@@ -47,7 +47,7 @@ class InspectFeatures(QWidget,Ui_Form):
         self.iface = iface
         # self.iface.currentLayerChanged.connect(self.enableScale)
         self.mMapLayerComboBox.layerChanged.connect(self.enableScale)
-        self.mMapLayerComboBox.layerChanged.connect(self.mFieldExpressionWidget.setLayer)
+        self.mMapLayerComboBox.layerChanged.connect(self.setLayerToFilter)
         if not self.iface.activeLayer():
             self.enableTool(False)
         # self.iface.currentLayerChanged.connect(self.enableTool)
@@ -95,14 +95,14 @@ class InspectFeatures(QWidget,Ui_Form):
         return action
     
     def getIterateLayer(self):
-	    return self.mMapLayerComboBox.currentLayer()
+	    return self.currentLayer()
 
     def enableTool(self, enabled = True):
         if enabled == None or not isinstance(enabled, QgsVectorLayer):
             allowed = False
         else:
             allowed = True
-        toggled = self.inspectPushButton.isChecked()
+        toggled = self.isToggled()
         enabled = allowed and toggled
         self.backInspectButton.setEnabled(enabled)
         self.nextInspectButton.setEnabled(enabled)
@@ -178,7 +178,7 @@ class InspectFeatures(QWidget,Ui_Form):
             featIdList = self.getFeatIdList(currentLayer)
             if oldIndex not in featIdList:
                 oldIndex = 0
-            zoom = self.mScaleWidget.scale() if currentLayer.geometryType() == QgsWkbTypes.PointGeometry else self.zoomPercentageSpinBox.value()
+            zoom = self.zoomLevel()
             if oldIndex == newId:
                 # self.iface.messageBar().pushMessage(self.tr('Warning!'), self.tr('Selected id does not exist in layer {0}. Returned to previous id.').format(lyrName), level=Qgis.Warning, duration=2)
                 return
@@ -191,6 +191,21 @@ class InspectFeatures(QWidget,Ui_Form):
                 # self.iface.messageBar().pushMessage(self.tr('Warning!'), self.tr('Selected id does not exist in layer {0}. Returned to previous id.').format(lyrName), level=Qgis.Warning, duration=2)
                 self.idSpinBox.setValue(oldIndex)
                 self.makeZoom(zoom, currentLayer, oldIndex)
+
+    def zoomLevel(self):
+        """
+        
+        """
+        if self.getIterateLayer().geometryType() == QgsWkbTypes.PointGeometry:
+            return self.mScaleWidget.scale()
+        return self.zoomPercentageSpinBox.value()
+
+
+    def currentFeatureId(self):
+        """
+        Reads current feature ID selected to be zoomed in.
+        """
+        return self.idSpinBox.value()
 
     def getFeatIdList(self, currentLayer):
         #getting all features ids
@@ -214,9 +229,7 @@ class InspectFeatures(QWidget,Ui_Form):
         """
         currentLayer = self.getIterateLayer()
         lyrName = currentLayer.name()
-        
-        zoom = self.mScaleWidget.scale() if currentLayer.geometryType() == QgsWkbTypes.PointGeometry else self.zoomPercentageSpinBox.value()
-        
+        zoom = self.zoomLevel()
         featIdList = self.getFeatIdList(currentLayer)
         
         if currentLayer and len(featIdList) > 0:
@@ -315,10 +328,10 @@ class InspectFeatures(QWidget,Ui_Form):
         Shows/Hides the tool bar
         """
         if toggled is None:
-            toggled = self.inspectPushButton.isChecked()
+            toggled = self.isToggled()
         if toggled:
             self.splitter.show()
-            self.enableTool(self.mMapLayerComboBox.currentLayer())
+            self.enableTool(self.currentLayer())
             self.setToolTip(self.tr('Select a vector layer to enable tool'))
         else:
             self.splitter.hide()   
@@ -365,12 +378,80 @@ class InspectFeatures(QWidget,Ui_Form):
             featIdList = currentLayer.allFeatureIds()
             self.setValues(featIdList, currentLayer)
             self.idSpinBox.setEnabled(True)
-    
+
+    def isToggled(self):
+        """
+        Identifies whether tool bar is toggled ("open").
+        :return: (bool) if tool bar is toggled.
+        """
+        return self.inspectPushButton.isChecked()
+
+    def setToggled(self, checked):
+        """
+        Set tool bar's toggling status (if it's "open"). Alias to "toggleBar".
+        :param checked: (bool) if tool bar is toggled.
+        """
+        return self.toggleBar(checked)
+
+    def currentLayer(self):
+        """
+        Reads current layer set to combo box widget.
+        :return: (QgsVectorLayer) current selected layer.
+        """
+        return self.mMapLayerComboBox.currentLayer()
+
+    def currentLayerName(self):
+        """
+        Reads current layer's name set to combo box widget.
+        :return: (str) current selected layer's name.
+        """
+        return self.mMapLayerComboBox.currentText()
+
+    def setLayer(self, layer):
+        """
+        Sets a layer as current layer on its combo box. Input may be either its
+        name or a vector that is currently loaded to canvas.
+        :param layer: (str/QgsVectorLayer) either layer name or a vector layer.
+        """
+        if isinstance(layer, str):
+            self.mMapLayerComboBox.setCurrentText(layer)
+        else:
+            self.mMapLayerComboBox.setLayer(layer)
+
+    def setLayerToFilter(self, layer):
+        """
+        Sets a layer as current layer on the filter widget.
+        :param layer: (QgsVectorLayer) vector layer to be set.
+        """
+        self.mFieldExpressionWidget.setLayer(layer)
+
+    def hasValidExpression(self):
+        """
+        Checks if currently filled expression on filter expression widget is
+        valid.
+        :return: (bool) whether current expression is valid.
+        """
+        return self.mFieldExpressionWidget.isValidExpression()
+
+    def currentFilterText(self):
+        """
+        Reads current expression filled on filter expression widget as text.
+        :return: (str) feature filtering expression from read GUI.
+        """
+        return self.mFieldExpressionWidget.currentText()
+
+    def currentFilterExpression(self):
+        """
+        Reads current expression filled on filter expression widget as text.
+        :return: (str) feature filtering expression from read GUI.
+        """
+        return self.mFieldExpressionWidget.asExpression()
+
     @pyqtSlot(bool)
     def on_refreshPushButton_clicked(self):
         activeLayer = self.iface.activeLayer()
         if isinstance(activeLayer, QgsVectorLayer):
-            self.mMapLayerComboBox.setLayer(activeLayer)
+            self.setLayer(activeLayer)
         else:
             self.iface.messageBar().pushMessage(self.tr('Warning!'), self.tr('Active layer is not valid to be used in this tool.'), level=Qgis.Warning, duration=2)
     
