@@ -131,7 +131,11 @@ class FeatureHandler(QObject):
             feat.setGeometry(geom)
         if attributeMap:
             feat = self.attributeHandler.setFeatureAttributes(
+<<<<<<< HEAD
                             feat, attributeMap)
+=======
+                feat, attributeMap)
+>>>>>>> dev
         return feat
 
     def handleFeature(self, featList, featureWithoutGeom, lyr, 

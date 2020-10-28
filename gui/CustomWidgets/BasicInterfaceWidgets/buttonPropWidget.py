@@ -25,7 +25,10 @@ import os
 from functools import partial
 
 from qgis.core import Qgis
+<<<<<<< HEAD
 from qgis.gui import QgsMessageBar
+=======
+>>>>>>> dev
 from qgis.utils import iface
 from qgis.PyQt import uic
 from qgis.PyQt.QtGui import QIcon, QColor, QKeySequence

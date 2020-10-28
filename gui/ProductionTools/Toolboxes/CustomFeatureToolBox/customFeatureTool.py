@@ -104,8 +104,11 @@ class CustomFeatureTool(QDockWidget, FORM_CLASS):
         project.readProject.connect(self.restoreStateFromProject)
         # at first, dock is not initiated (optimize loading time), so calls
         # will not be perceived by toold => manual restoration on init
+<<<<<<< HEAD
         redoAction = iface.mainWindow().findChildren(QAction, "mActionRedo")[0]
         redoAction.triggered.connect(self._redoPressed)
+=======
+>>>>>>> dev
         self.restoreStateFromProject()
 
     def clear(self):
@@ -645,6 +648,7 @@ class CustomFeatureTool(QDockWidget, FORM_CLASS):
         s = self.currentButtonSetup()
         return s.checkedButton() if s is not None else None
 
+<<<<<<< HEAD
     def _redoPressed(self):
         """
         When redo button is pressed, a feature added signal will be emitted,
@@ -676,6 +680,8 @@ class CustomFeatureTool(QDockWidget, FORM_CLASS):
                 msg, Qgis.Warning, 5
             )
 
+=======
+>>>>>>> dev
     def _registerAddedFeature(self, featId):
         """
         In order to avoid corrupting the undo stack for the layer, feature
@@ -1325,5 +1331,8 @@ class CustomFeatureTool(QDockWidget, FORM_CLASS):
         project.writeProject.disconnect(self.saveStateToProject)
         project.readProject.disconnect(self.restoreStateFromProject)
         iface.mapCanvas().mapToolSet.disconnect(self._mapToolSet)
+<<<<<<< HEAD
         redoAction = iface.mainWindow().findChildren(QAction, "mActionRedo")[0]
         redoAction.triggered.disconnect(self._redoPressed)
+=======
+>>>>>>> dev
