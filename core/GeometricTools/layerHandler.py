@@ -1676,6 +1676,7 @@ class LayerHandler(QObject):
                         return int(i)
                     except:
                         return i
+
                 def sortingMethod(item):
                     return intify(item[1])
                 classFieldMap[fieldName] = {
