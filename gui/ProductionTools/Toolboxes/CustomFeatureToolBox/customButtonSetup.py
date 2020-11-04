@@ -22,6 +22,7 @@
 """
 
 import os
+import copy
 import platform
 from string import Template
 from datetime import datetime
@@ -826,8 +827,11 @@ class CustomFeatureButton(QObject):
                 vl = self.vectorLayer()
                 fields = vl.fields()
                 pkIdxList = vl.primaryKeyAttributes()
-                for field in fields:
+                for idx, field in enumerate(fields):
                     fieldName = field.name()
+                    if fields.fieldOrigin(idx) == fields.OriginExpression:
+                        # virtual fields are ignored
+                        continue
                     if fieldName not in attrMap:
                         self._props["attributeMap"][fieldName] = {
                             "value": None,
@@ -865,7 +869,7 @@ class CustomFeatureButton(QObject):
         creation.
         :return: (dict) attribute map for new/updated features.
         """
-        return dict(self._props["attributeMap"])
+        return copy.deepcopy(self._props["attributeMap"])
 
     def supportedTools(self):
         """
