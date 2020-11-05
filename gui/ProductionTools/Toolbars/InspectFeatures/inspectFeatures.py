@@ -21,14 +21,21 @@ Builds a temp rubberband with a given size and shape.
  ***************************************************************************/
 """
 import os
-from qgis.PyQt.QtWidgets import QMessageBox, QSpinBox, QAction, QWidget
-from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtCore import QSettings, pyqtSignal, pyqtSlot, QObject, Qt
-from qgis.PyQt import QtGui, uic, QtCore
-from qgis.PyQt.Qt import QObject
+import json
 
-from qgis.core import QgsMapLayer, Qgis, QgsVectorLayer, QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsFeatureRequest, QgsWkbTypes, QgsProject
-from qgis.gui import QgsMessageBar
+from qgis.core import (Qgis,
+                       QgsProject,
+                       QgsMapLayer,
+                       QgsWkbTypes,
+                       QgsVectorLayer,
+                       QgsFeatureRequest,
+                       QgsCoordinateTransform,
+                       QgsCoordinateReferenceSystem)
+from qgis.PyQt import uic
+from qgis.PyQt.QtCore import pyqtSignal, pyqtSlot
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtWidgets import QAction, QWidget, QSpinBox, QMessageBox 
+
 
 from .inspectFeatures_ui import Ui_Form
 # FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -36,6 +43,8 @@ from .inspectFeatures_ui import Ui_Form
 
 class InspectFeatures(QWidget,Ui_Form):
     idxChanged = pyqtSignal(int)
+    PROJECT_STATE_VAR = "inspectFeatureState"
+
     def __init__(self, iface, parent = None):
         """
         Constructor
@@ -194,12 +203,25 @@ class InspectFeatures(QWidget,Ui_Form):
 
     def zoomLevel(self):
         """
-        
+        Reads screen size proportions from GUI. If active layer is made of
+        points, zoom level is given as the denominator for map scale, otherwise
+        it'll be a percentage of the screen (proportions of selected feature to
+        canvas).
+        :return: (float) zoom level for feature display/zoom.
         """
         if self.getIterateLayer().geometryType() == QgsWkbTypes.PointGeometry:
             return self.mScaleWidget.scale()
         return self.zoomPercentageSpinBox.value()
 
+    def zoomLevel(self, zoom):
+        """
+        Reads screen size proportions from GUI. If active layer is made of
+        points, zoom level is given as the denominator for map scale, otherwise
+        it'll be a percentage of the screen (proportions of selected feature to
+        canvas).
+        :param zoom: (float) zoom level for feature display/zoom.
+        """
+        self.zoomPercentageSpinBox.setValue(zoom)
 
     def currentFeatureId(self):
         """
@@ -446,6 +468,75 @@ class InspectFeatures(QWidget,Ui_Form):
         :return: (str) feature filtering expression from read GUI.
         """
         return self.mFieldExpressionWidget.asExpression()
+
+    def state(self):
+        """
+        Reads current tool's attributes that compose its state.
+        :return: (dict) an attribute value map that represents current tool's
+                state.
+        """
+        return {
+            "layer": self.currentLayerName(),
+            "zoom": self.zoomLevel(),
+            "featId": self.currentFeatureId(),
+            "expression": self.currentFilterExpression(),
+            "isOpen": self.isToggled()
+        }
+
+    def stateAsString(self, state):
+        """
+        Stringfied states is a simple and effective form of serializing objects for
+        QGIS environment variable settings, as well as outside QGIS systems
+        communications. This method transforms a tool's state map into a string.
+        :param state: (dict) the map to be stringfied.
+        :return: (str) stringfied tool state map.
+        """
+        return json.dumps(self.state())
+
+    def stateFromString(self, state):
+        """
+        Reverts a string into a valid tool state map.
+        :param state: (str) the map to be de-stringfied.
+        :return: (dict) an attribute value map that represents current tool's
+                state.
+        """
+        return json.loads(state)
+
+    def validateState(self, state):
+        """
+        Verifies if a map is is a valid representation of a tool's state.
+        :param state: (dict) the map to be checked.
+        :return: (bool) whether the provided map represents a tool state.
+        """
+        if "layer" in state and not isinstance(state["layer"], str):
+            return False
+        if "zoom" in state and not isinstance(state["zoom"], float):
+            return False
+        if "featId" in state and not isinstance(state["featId"], int):
+            return False
+        if "expression" in state and not isinstance(state["expression"], str):
+            return False
+        if "isOpen" in state and not isinstance(state["isOpen"], bool):
+            return False
+        return True
+
+    def setState(self, state):
+        """
+        Updates tool's attributes related to its state.
+        :param state: (dict) an attribute value map that represents current tool's
+                    state.
+        :return: (bool) whether given parameters reflects tool's state after
+                aplying it.
+        """
+        if not self.validateState(state):
+            return False
+        self.setLayer(state["scale"])
+        self.setZoomLevel()
+        self.sizesComboBox.setCurrentIndex(int(state["size"])),
+        self.shapesComboBox.setCurrentIndex(int(state["shape"])),
+        self.setColor(QColor(*state["color"]))
+        self.setToggled(state["isOpen"])
+        return True
 
     @pyqtSlot(bool)
     def on_refreshPushButton_clicked(self):

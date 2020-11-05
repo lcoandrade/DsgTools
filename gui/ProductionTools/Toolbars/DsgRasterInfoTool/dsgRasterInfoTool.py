@@ -47,6 +47,8 @@ class DsgRasterInfoTool(QWidget, Ui_DsgRasterInfoTool):
     2- On mouse click: create a new instance of desired layer (filled on config).
         * behaviour 2 is an extrapolation of first conception
     """
+    PROJECT_STATE_VAR = "rasterToolState"
+
     def __init__(self, iface, parent = None):
         """
         Class constructor.

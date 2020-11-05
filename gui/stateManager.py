@@ -20,7 +20,14 @@
  ***************************************************************************/
 """
 
+from copy import deepcopy
+
 from qgis.core import QgsProject, QgsExpressionContextUtils
+
+# state watching tracker status must be global for this manager.
+# this will be used to either connect or disconnect signals from tool state
+# automated updates  
+stateWatcherStatus = dict()
 
 class NoStateFoundException(Exception):
     def __init__(self, tool):
@@ -37,7 +44,7 @@ def app():
     :return: (DsgTools) current instance for DsgTools main class.
     """
     # importing DsgTools class outside method scope will cause a conflict
-    # upon plugin booting
+    # when the plugin is booting
     from DsgTools.dsg_tools import DsgTools
     return DsgTools.instance()
 
@@ -100,9 +107,9 @@ def stateManagedTools():
             2: "Tool bar"
         }[idx]
         tools[mName] = list()
-        for attr in dir(m):
-            if hasattr(getattr(m, attr), "PROJECT_STATE_VAR"):
-                tools[mName].append(attr)
+        for child in dir(m):
+            if hasattr(getattr(m, child), "PROJECT_STATE_VAR"):
+                tools[mName].append(child)
     return tools
 
 def getTool(tool):
@@ -202,6 +209,56 @@ def loadState():
             except Exception as e:
                 # log message
                 print("Unable to load state of {0} ('{1}')".format(tName, e))
+
+def toolStateIsTracked(tool):
+    """
+    Identifies whether a tool's state is being automatically tracked to the
+    current QGIS project.
+    :param tool: (str) tool be checked for its state tracking status.
+    :return: (bool) whether given tool has its actively managed by this
+             manager.
+    """
+    if tool in stateWatcherStatus:
+        return bool(stateWatcherStatus[tool])
+    return False
+
+def trackToolState(tool):
+    """
+    Starts watching tool's state and automatically tracks it to current QGIS
+    project.
+    :param tool: (str) tool be checked for its state tracking status.
+    :return: (bool) whether tool is successfully tracked.
+    """
+    if toolStateIsTracked(tool):
+        return True
+    # connect signals here
+    stateWatcherStatus[tool] = True
+    return bool(stateWatcherStatus[tool])
+
+def untrackToolState(tool):
+    """
+    Stops watching tool's state and automatically tracks it to current QGIS
+    project.
+    :param tool: (str) tool be checked for its state tracking status.
+    :return: (bool) whether tool is successfully untracked.
+    """
+    if not toolStateIsTracked(tool):
+        return False
+    # disconnect signals here
+    stateWatcherStatus[tool] = False
+
+def allToolsTrackingStatus():
+    """
+    Identifies whether tool's state is being actively tracked by this manager 
+    (e.g. signals for storing the tool's state is connected), for each eligible
+    tool.
+    :return: (dict) state watcher status for each DSGTools state tracked tool.
+    """
+    for _, tools in stateManagedTools():
+        for tool in tools:
+            if tool not in stateWatcherStatus:
+                stateWatcherStatus[tool] = False
+    return deepcopy(stateWatcherStatus)
 
 def start():
     """
