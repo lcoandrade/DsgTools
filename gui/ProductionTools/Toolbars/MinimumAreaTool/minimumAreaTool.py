@@ -312,7 +312,7 @@ class MinimumAreaTool(QWidget,FORM_CLASS):
             "isOpen": self.isToggled()
         }
 
-    def stateAsString(self, state):
+    def stateAsString(self, state=None):
         """
         Stringfied states is a simple and effective form of serializing objects for
         QGIS environment variable settings, as well as outside QGIS systems
@@ -320,7 +320,8 @@ class MinimumAreaTool(QWidget,FORM_CLASS):
         :param state: (dict) the map to be stringfied.
         :return: (str) stringfied tool state map.
         """
-        return json.dumps(self.state())
+        state = state or self.state()
+        return json.dumps(state)
 
     def stateFromString(self, state):
         """

@@ -104,7 +104,11 @@ class InspectFeatures(QWidget,Ui_Form):
         return action
     
     def getIterateLayer(self):
-	    return self.currentLayer()
+        """
+        Reads current layer set to combo box widget. Alias to 'currentLayer'.
+        :return: (QgsVectorLayer) current selected layer.
+        """
+        return self.currentLayer()
 
     def enableTool(self, enabled = True):
         if enabled == None or not isinstance(enabled, QgsVectorLayer):
@@ -213,7 +217,7 @@ class InspectFeatures(QWidget,Ui_Form):
             return self.mScaleWidget.scale()
         return self.zoomPercentageSpinBox.value()
 
-    def zoomLevel(self, zoom):
+    def setZoomLevel(self, zoom):
         """
         Reads screen size proportions from GUI. If active layer is made of
         points, zoom level is given as the denominator for map scale, otherwise
@@ -221,19 +225,30 @@ class InspectFeatures(QWidget,Ui_Form):
         canvas).
         :param zoom: (float) zoom level for feature display/zoom.
         """
-        self.zoomPercentageSpinBox.setValue(zoom)
+        if self.getIterateLayer().geometryType() == QgsWkbTypes.PointGeometry:
+            self.mScaleWidget.setScale(zoom)
+        else:
+            self.zoomPercentageSpinBox.setValue(zoom)
 
     def currentFeatureId(self):
         """
         Reads current feature ID selected to be zoomed in.
+        :return: current feature ID as read from GUI.
         """
         return self.idSpinBox.value()
 
+    def setCurrentFeatureId(self, featId):
+        """
+        Sets current feature ID selected to be zoomed in.
+        :param featId: (int) feature ID to be set to GUI.
+        """
+        return self.idSpinBox.setValue(featId)
+
     def getFeatIdList(self, currentLayer):
         #getting all features ids
-        if self.mFieldExpressionWidget.currentText() == '':
+        if self.currentFilterText() == '':
             featIdList = currentLayer.allFeatureIds()
-        elif not self.mFieldExpressionWidget.isValidExpression():
+        elif not self.hasValidExpression():
             self.iface.messageBar().pushMessage(self.tr('Warning!'), self.tr('Invalid attribute filter!'), level=Qgis.Warning, duration=2)
             return []
         else:
@@ -413,6 +428,7 @@ class InspectFeatures(QWidget,Ui_Form):
         Set tool bar's toggling status (if it's "open"). Alias to "toggleBar".
         :param checked: (bool) if tool bar is toggled.
         """
+        self.inspectPushButton.setChecked(checked)
         return self.toggleBar(checked)
 
     def currentLayer(self):
@@ -462,6 +478,13 @@ class InspectFeatures(QWidget,Ui_Form):
         """
         return self.mFieldExpressionWidget.currentText()
 
+    def setExpression(self, exp):
+        """
+        Sets current expression filled on filter expression widget as text.
+        :param exp: (str) feature filtering expression to be set to GUI.
+        """
+        self.mFieldExpressionWidget.setExpression(exp)
+
     def currentFilterExpression(self):
         """
         Reads current expression filled on filter expression widget as text.
@@ -479,11 +502,11 @@ class InspectFeatures(QWidget,Ui_Form):
             "layer": self.currentLayerName(),
             "zoom": self.zoomLevel(),
             "featId": self.currentFeatureId(),
-            "expression": self.currentFilterExpression(),
+            "expression": self.currentFilterText(),
             "isOpen": self.isToggled()
         }
 
-    def stateAsString(self, state):
+    def stateAsString(self, state=None):
         """
         Stringfied states is a simple and effective form of serializing objects for
         QGIS environment variable settings, as well as outside QGIS systems
@@ -491,7 +514,8 @@ class InspectFeatures(QWidget,Ui_Form):
         :param state: (dict) the map to be stringfied.
         :return: (str) stringfied tool state map.
         """
-        return json.dumps(self.state())
+        state = state or self.state()
+        return json.dumps(state)
 
     def stateFromString(self, state):
         """
@@ -530,11 +554,10 @@ class InspectFeatures(QWidget,Ui_Form):
         """
         if not self.validateState(state):
             return False
-        self.setLayer(state["scale"])
-        self.setZoomLevel()
-        self.sizesComboBox.setCurrentIndex(int(state["size"])),
-        self.shapesComboBox.setCurrentIndex(int(state["shape"])),
-        self.setColor(QColor(*state["color"]))
+        self.setLayer(state["layer"])
+        self.setZoomLevel(state["zoom"])
+        self.setCurrentFeatureId(state["featId"])
+        self.setExpression(state["expression"])
         self.setToggled(state["isOpen"])
         return True
 
@@ -550,4 +573,6 @@ class InspectFeatures(QWidget,Ui_Form):
         self.iface.unregisterMainWindowAction(self.activateToolAction)
         self.iface.unregisterMainWindowAction(self.backButtonAction)
         self.iface.unregisterMainWindowAction(self.nextButtonAction)
-            
+        self.mMapLayerComboBox.layerChanged.disconnect(self.enableScale)
+        self.mMapLayerComboBox.layerChanged.disconnect(self.setLayerToFilter)
+        self.mMapLayerComboBox.layerChanged.disconnect(self.enableTool)
